@@ -2,12 +2,19 @@
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="utf-8" />
-    <title></title>
+	<meta charset="utf-8" />
+	<title></title>
+	<script src="../scripts/jquery-3.3.1.js"></script>
 	<script src="../scripts/loadimage.js"></script>
-	<scrpit src="../scripts/jquery-3.3.1.min.js"></scrpit>
+	<link rel="stylesheet" href="../css/palette.css" />
 </head>
 <body>
-	<canvas id="origin"></canvas>
+	<div id="header">
+		<div id="titleDiv">Palette Recoloring</div>
+	</div>
+
+	<div id="content">
+		<canvas id="origin" class="display" height="500" width="500"></canvas>
+	</div>
 </body>
 </html>

@@ -1,0 +1,24 @@
+﻿body {
+	margin: 0;
+}
+
+#header {
+	background-color: #eee;
+	border-bottom: 2px solid #ddd;
+	padding: 10px;
+}
+
+#content {
+	margin: 10px;
+}
+
+#titleDiv {
+	font-size: 36px;
+	display: block;
+	margin: 0 auto;
+}
+
+.display {
+	border: 1px solid #ddd;
+	padding: 5px;
+}
