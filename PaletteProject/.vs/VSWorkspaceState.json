@@ -1,9 +1,11 @@
 {
   "ExpandedNodes": [
     "",
+    "\\css",
     "\\html",
+    "\\images",
     "\\scripts"
   ],
-  "SelectedNode": "\\scripts\\loadimage.js",
+  "SelectedNode": "\\images\\forest.jpg",
   "PreviewInSolutionExplorer": false
 }

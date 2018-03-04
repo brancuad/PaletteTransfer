@@ -595,7 +595,10 @@ function kmeans(points, k, distance, snapshotPeriod, snapshotCb) {
          snapshotCb(clusters);
       }
    }
-   return clusters;
+   return {
+	   centroids: centroids,
+	   clusters: clusters
+   };
 }
 
 module.exports = kmeans;

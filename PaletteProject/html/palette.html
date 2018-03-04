@@ -3,18 +3,42 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 	<meta charset="utf-8" />
-	<title></title>
+	<title>Palette Recoloring</title>
 	<script src="../scripts/jquery-3.3.1.js"></script>
 	<script src="../scripts/loadimage.js"></script>
+	<script src="../scripts/clusterfck.js"></script>
+	<script src="../scripts/jscolor.js"></script>
 	<link rel="stylesheet" href="../css/palette.css" />
 </head>
 <body>
 	<div id="header">
-		<div id="titleDiv">Palette Recoloring</div>
+		<div id="titleDiv">
+			Palette Recoloring
+			<img id="loading" src="../images/loading.gif" />
+		</div>
 	</div>
 
 	<div id="content">
-		<canvas id="origin" class="display" height="500" width="500"></canvas>
+		<div id="originalImage" class="imageContainer">
+			<canvas id="origin" class="imageDisplay" height="400" width="400"></canvas>
+		</div>
+
+		<div id="paletteContainer">
+			<button id="calc" class="actionBtn">Calculate Palette</button>
+			<div class="colorContainer">
+				<button id="originColor1" class="jscolor {valueElement:null}"></button>
+				<button id="originColor2" class="jscolor {valueElement:null}"></button>
+				<button id="originColor3" class="jscolor {valueElement:null}"></button>
+				<button id="originColor4" class="jscolor {valueElement:null}"></button>
+				<button id="originColor5" class="jscolor {valueElement:null}"></button>
+			</div>
+			<button id="transfer" class="actionBtn">Transfer Colors</button>
+		</div>
+
+
+		<div id="outputImage" class="imageContainer">
+			<canvas id="output" class="imageDisplay" height="400" width="400"></canvas>
+		</div>
 	</div>
 </body>
 </html>

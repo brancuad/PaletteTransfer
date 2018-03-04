@@ -8,17 +8,77 @@
 	padding: 10px;
 }
 
-#content {
-	margin: 10px;
-}
-
 #titleDiv {
 	font-size: 36px;
 	display: block;
 	margin: 0 auto;
+	width: 1300px;
+	height: 40px;
 }
 
-.display {
+
+#loading {
+	height: 30px;
+	display: none;
+}
+
+#content {
+	margin: 10px auto;
+	width: 1300px;
+	overflow: auto;
+	display: table;
+}
+
+#originalImage {
+	float: left;
+}
+
+#outputImage {
+	float: right;
+}
+
+.imageContainer {
+	padding: 10px;
+	border: 2px solid #ddd;
+	max-width: 450px;
+	margin: 10px auto;
+	display: table-cell;
+}
+
+.imageDisplay {
 	border: 1px solid #ddd;
+	margin: 0 auto;
 	padding: 5px;
+	display: block;
+}
+
+#paletteContainer {
+	margin-left: auto;
+	margin-right: auto;
+	vertical-align: middle;
+	display: table-cell;
+}
+
+.actionBtn {
+	font-size: 24px;
+	display: block;
+	margin: 0 auto;
+	cursor: pointer;
+}
+
+#transfer {
+	margin-top: 50px;
+}
+
+.colorContainer {
+	width: 167px;
+	margin: 0 auto;
+	padding: 5px;
+}
+
+.jscolor {
+	margin: auto;
+	width: 30px;
+	height: 30px;
+	cursor: pointer;
 }
