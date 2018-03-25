@@ -81,6 +81,7 @@ var origin = {
 
 		// Display histograms
 		var histCtx = $("#originHist")[0].getContext('2d');
+		var histCanvas = $("#originHist");
 
 		var maxBinSize = function (bins) {
 			var maxLength = 0;
@@ -103,18 +104,22 @@ var origin = {
 			histCtx.fillStyle = color;
 			jQuery.each(bins, function (i, x) {
 				var pct = (bins[i].length / max) * 130;
-				histCtx.fillRect(i * 16, y, 15, -Math.round(pct));
+				histCtx.fillRect(i * (histCanvas.width() / 16), y, 15, -Math.round(pct));
 			});
 		};
 
-		colorbars(rmax, rbins, "rgb(255,0,0)", 133);
-		colorbars(gmax, gbins, "rgb(0,255,0)", 266);
-		colorbars(bmax, bbins, "rgb(0,0,255)", 399);
+		colorbars(rmax, rbins, "rgb(255,0,0)", this.canvas.height() / 3);
+		colorbars(gmax, gbins, "rgb(0,255,0)", 2 * this.canvas.height() / 3);
+		colorbars(bmax, bbins, "rgb(0,0,255)", this.canvas.height());
 
 		// Get mean color per bin in lab color space
 		var rmeans = colorArray();
 		var gmeans = colorArray();
 		var bmeans = colorArray();
+
+		var rlabBins = [];
+		var blabBins = [];
+		var glabBins = [];
 
 		// Convert to lab and average all bins
 		for (var i = 0; i < rbins.length; i++) {
@@ -126,44 +131,46 @@ var origin = {
 			glabBin = []
 			blabBin = []
 
-			if (rbin.length > 0) {
-				// Convert rgb pixels to lab
-				for (var j = 0; j < rbin.length; j++) {
-					var rlab = rgb2lab(rbin[j]);
-					rlabBin[j] = rlab;
-				}
+			// Convert rgb pixels to lab
+			for (var j = 0; j < rbin.length; j++) {
+				var rlab = rgb2lab(rbin[j]);
+				rlabBin[j] = rlab;
+			}
 
-				// Average rlab values
-				lTotal = 0;
-				aTotal = 0;
-				bTotal = 0;
-				for (var j = 0; j < rlabBin.length; j++) {
-					var labPixel = rlabBin[j];
-					lTotal += labPixel[0];
-					aTotal += labPixel[1];
-					bTotal += labPixel[2];
-				}
+			// Average rlab values
+			lTotal = 0;
+			aTotal = 0;
+			bTotal = 0;
+			for (var j = 0; j < rlabBin.length; j++) {
+				var labPixel = rlabBin[j];
+				lTotal += labPixel[0];
+				aTotal += labPixel[1];
+				bTotal += labPixel[2];
+			}
+
+			if (rbin.length > 0) {
 				rmeans[i].push(lTotal / rlabBin.length);
 				rmeans[i].push(aTotal / rlabBin.length);
 				rmeans[i].push(bTotal / rlabBin.length);
 			}
 
-			if (gbin.length > 0) {
-				// Convert and average green bin
-				for (var j = 0; j < gbin.length; j++) {
-					var glab = rgb2lab(gbin[j]);
-					glabBin[j] = glab;
-				}
+			// Convert and average green bin
+			for (var j = 0; j < gbin.length; j++) {
+				var glab = rgb2lab(gbin[j]);
+				glabBin[j] = glab;
+			}
 
-				lTotal = 0;
-				aTotal = 0;
-				bTotal = 0;
-				for (var j = 0; j < glabBin.length; j++) {
-					var labPixel = glabBin[j];
-					lTotal += labPixel[0];
-					aTotal += labPixel[1];
-					bTotal += labPixel[2];
-				}
+			lTotal = 0;
+			aTotal = 0;
+			bTotal = 0;
+			for (var j = 0; j < glabBin.length; j++) {
+				var labPixel = glabBin[j];
+				lTotal += labPixel[0];
+				aTotal += labPixel[1];
+				bTotal += labPixel[2];
+			}
+
+			if (gbin.length > 0) {
 				gmeans[i].push(lTotal / glabBin.length);
 				gmeans[i].push(aTotal / glabBin.length);
 				gmeans[i].push(bTotal / glabBin.length);
@@ -171,27 +178,31 @@ var origin = {
 
 			}
 
-			if (bbin.length > 0) {
-				// Convert and average blue bin
-				for (var j = 0; j < bbin.length; j++) {
-					var blab = rgb2lab(bbin[j]);
-					blabBin[j] = blab;
-				}
+			// Convert and average blue bin
+			for (var j = 0; j < bbin.length; j++) {
+				var blab = rgb2lab(bbin[j]);
+				blabBin[j] = blab;
+			}
 
-				lTotal = 0;
-				aTotal = 0;
-				bTotal = 0;
-				for (var j = 0; j < blabBin.length; j++) {
-					var labPixel = blabBin[j];
-					lTotal += labPixel[0];
-					aTotal += labPixel[1];
-					bTotal += labPixel[2];
-				}
+			lTotal = 0;
+			aTotal = 0;
+			bTotal = 0;
+			for (var j = 0; j < blabBin.length; j++) {
+				var labPixel = blabBin[j];
+				lTotal += labPixel[0];
+				aTotal += labPixel[1];
+				bTotal += labPixel[2];
+			}
+
+			if (bbin.length > 0) {
 				bmeans[i].push(lTotal / blabBin.length);
 				bmeans[i].push(aTotal / blabBin.length);
 				bmeans[i].push(bTotal / blabBin.length);
-
 			}
+
+			rlabBins.push(rlabBin);
+			glabBins.push(glabBin);
+			blabBins.push(blabBin);
 
 		}
 
@@ -207,20 +218,73 @@ var origin = {
 			return arr;
 		}
 
+		// Combine the mean points gathered from all of the bins
 		var means = [];
 
 		means = means.concat(removeEmpty(rmeans));
 		means = means.concat(removeEmpty(gmeans));
 		means = means.concat(removeEmpty(bmeans));
 
-		return means;
+		// Calculate the starting centroids for kmeans
+		var centroids = [];
+		var usedBins = [];
+		while (centroids.length < 5) {
+			// Get mean of largest bin
+			var labBins = [rlabBins, glabBins, blabBins];
+			var max_i; var max_j; var maxSize = 0;
+			for (var i = 0; i < labBins.length; i++) {
+				for (var j = 0; j < labBins[i].length; j++) {
+
+					var used = false;
+					for (var bin in usedBins) {
+						if (usedBins[bin][0] == i && usedBins[bin][1] == j) {
+							used = true;
+							break;
+						}
+					}
+
+					if (used)
+						continue
+
+					if (labBins[i][j].length > maxSize) {
+						maxSize = labBins[i][j].length;
+						max_i = i;
+						max_j = j;
+					}
+				}
+			}
+
+			if (max_i == 0) {
+				centroids.push(rmeans[max_j]);
+			}
+			else if (max_i == 1) {
+				centroids.push(gmeans[max_j]);
+			}
+			else {
+				centroids.push(bmeans[max_j]);
+			}
+
+			usedBins.push([max_i, max_j]);
+
+			// TODO: Attenuate size of bins
+		}
+		
+		// Add black to centroids to filter out dark colors
+		centroids.push([0.0, 0.0, 0.0])
+
+		return {
+			points: means,
+			centroids: centroids
+		};
 	},
 
 	getPalette: function () {
 
-		var kmeansPoints = origin.getKmeansData();
+		var data = origin.getKmeansData();
+		var kmeansPoints = data.points;
 
-		var kMeansResult = clusterfck.kmeans(kmeansPoints, 5);
+		// The 6th cluster will always filter out the darkest cluster (closest to black)
+		var kMeansResult = clusterfck.kmeans(kmeansPoints, 6, data.centroids);
 
 		var palette = []
 		for (var i = 0; i < kMeansResult.centroids.length; i++) {

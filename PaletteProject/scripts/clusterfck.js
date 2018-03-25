@@ -542,13 +542,16 @@ function closestCentroid(point, centroids, distance) {
    return index;
 }
 
-function kmeans(points, k, distance, snapshotPeriod, snapshotCb) {
+function kmeans(points, k, centroids, distance, snapshotPeriod, snapshotCb) {
    distance = distance || "euclidean";
    if (typeof distance == "string") {
       distance = distances[distance];
    }
-   
-   var centroids = randomCentroids(points, k);
+
+   if (!centroids) {
+	   centroids = randomCentroids(points, k);
+   }
+
    var assignment = new Array(points.length);
    var clusters = new Array(k);
 
