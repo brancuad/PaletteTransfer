@@ -6,6 +6,17 @@ var rgbString = function (rgba) {
 	return "rgb(" + parseInt(rgba[0]) + ", " + parseInt(rgba[1]) + ", " + parseInt(rgba[2]) + ")"
 }
 
+var stringtoRgb = function (rgbString) {
+	var rgb = rgbString.replace(/[^\d,]/g, '').split(',');
+
+	for (var i in rgb) {
+		rgb[i] = parseInt(rgb[i]);
+	}
+
+	return rgb;
+
+}
+
 var showLoading = function () {
 	$("#loading").show();
 }
@@ -268,7 +279,7 @@ var origin = {
 
 			// TODO: Attenuate size of bins
 		}
-		
+
 		// Add black to centroids to filter out dark colors
 		centroids.push([0.0, 0.0, 0.0])
 
@@ -300,29 +311,15 @@ var origin = {
 	showPalette: function () {
 		palette = this.palette;
 
-		$("#originColor1").css({
-			backgroundColor: rgbString(palette[0])
-		});//.addClass("jscolor {valueElement:null,value:'" + rgbString(palette[0]) + "'");
+		for (var i = 0; i < 5; i++) {
+			$("#originColor" + (i + 1)).css({
+				backgroundColor: rgbString(palette[i])
+			});
+		}
 
-
-		$("#originColor2").css({
-			backgroundColor: rgbString(palette[1])
-		});
-
-		$("#originColor3").css({
-			backgroundColor: rgbString(palette[2])
-		});
-
-		$("#originColor4").css({
-			backgroundColor: rgbString(palette[3])
-		});
-
-		$("#originColor5").css({
-			backgroundColor: rgbString(palette[4])
-		});
 	},
 
-	recolor: function () {
+	recolor: function (newPalette) {
 		return this.pixels
 	},
 
@@ -388,12 +385,17 @@ var output = {
 		this.context.putImageData(imgData, x, y);
 	},
 
-	getPalette: function () {
-		if (!this.pixels)
-			return;
+	getNewPalette: function () {
+		newPalette = [];
 
-		return clusterfck.kmeans(this.pixels, 5);
-	},
+		for (var i = 1; i <= 5; i++) {
+			var color = $("#originColor" + i).css("backgroundColor");
+			var rgb = stringtoRgb(color);
+			newPalette.push(rgb);
+		}
+
+		return newPalette;
+	}
 }
 
 $(document).ready(function () {
@@ -422,13 +424,14 @@ $(document).ready(function () {
 
 				origin.clusters = kmeansResult.clusters;
 				origin.palette = kmeansResult.palette;
+
 				origin.showPalette();
 
 				hideLoading();
 			});
 
 			$("#transfer").mousedown(showLoading).mouseup(function () {
-				var recolorPixels = origin.recolor();
+				var recolorPixels = origin.recolor(output.getNewPalette());
 				var flatPixels = origin.flattenPixels(recolorPixels);
 
 				var imgData = origin.getTransferData(flatPixels);
