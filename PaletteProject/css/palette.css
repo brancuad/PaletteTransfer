@@ -16,6 +16,11 @@
 	height: 40px;
 }
 
+#settings {
+	right: 0;
+	text-align: right;
+}
+
 
 #loading {
 	height: 30px;

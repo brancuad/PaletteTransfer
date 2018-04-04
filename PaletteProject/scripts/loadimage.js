@@ -1,6 +1,6 @@
 // Loading an image
 
-var sourceImg = "../images/test.png"
+var sourceImg = "../images/flower.jpg"
 
 var rgbString = function (rgba) {
 	return "rgb(" + parseInt(rgba[0]) + ", " + parseInt(rgba[1]) + ", " + parseInt(rgba[2]) + ")"
@@ -309,7 +309,7 @@ var origin = {
 	},
 
 	showPalette: function () {
-		palette = this.palette;
+		var palette = this.palette;
 
 		for (var i = 0; i < 5; i++) {
 			$("#originColor" + (i + 1)).css({
@@ -319,8 +319,95 @@ var origin = {
 
 	},
 
+	getClusterIndex: function (color) {
+		for (var i in this.clusters) {
+			var cluster = this.clusters[i];
+
+			for (var j in cluster) {
+				var c = lab2rgb(cluster[j]);
+
+
+				if (color[0] <= c[0] + 5 && color[0] >= c[0] - 5
+					&& color[1] <= c[1] + 5 && color[1] >= c[1] - 5
+					&& color[2] <= c[2] + 5 && color[2] >= c[2] - 5) {
+					return 3;
+				}
+			}
+		}
+
+		return 3;
+	},
+
 	recolor: function (newPalette) {
-		return this.pixels
+		var palette = this.palette;
+
+		var pixels = this.pixels;
+
+		// Iterate through all pixels and transfer each color
+		for (var i = 0; i < pixels.length; i++) {
+			var pixel = pixels[i]
+
+			var newColor = this.transferColor(pixel);
+
+			pixels[i] = newColor;
+		}
+
+		return pixels;
+	},
+
+	transferColor: function (x, c, c_prime) {
+		x_lab = rgb2lab(x);
+		c_lab = rgb2lab(c);
+		c_prime_lab = rgb2lab(c_prime);
+
+		// for now, just subtract
+		/*
+		c_diff = []
+		c_diff.push(c_prime_lab[0] - c_lab[0])
+		c_diff.push(c_prime_lab[1] - c_lab[1])
+		c_diff.push(c_prime_lab[2] - c_lab[2])
+
+		x_prime_lab = [x_lab[0] + c_diff[0],
+		x_lab[1] + c_diff[1],
+		x_lab[2] + c_diff[2]
+		]
+		x_prime = lab2rgb(x_prime_lab);
+
+		for (var i in x_prime) {
+			x_prime[i] = parseInt(x_prime[i])
+		}
+
+		return x_prime;
+		*/
+
+		// Todo: calculate
+		// sigma: mean distance of all pairs of colors in palette
+		// lambda: solving system of equations
+		// f_i(x): calculating x'
+		var weigh = function (i, x) {
+
+			var phi = function (r) {
+				var sigma = 1;
+
+				return math.exp(-math.square(r) /
+					2 * math.square(sigma));
+			}
+
+			var weightTotal = 0;
+
+			for (var j in clusters) {
+				var lambda = 1;
+
+				weightTotal += lambda * phi(math.abs(x - rgb2lab(this.palette[j])));
+			}
+
+			return weightTotal;
+		}
+
+		for (var i in this.clusters) {
+			var weight = weigh(i, x_lab);
+		}
+
 	},
 
 	flattenPixels: function (pixels) {
@@ -334,14 +421,6 @@ var origin = {
 		}
 
 		return data;
-	},
-
-	getTransferData: function (pixels, x = 0, y = 0) {
-		flatData = this.context.getImageData(x, y, this.canvas.width(), this.canvas.height());
-
-		flatData.data = pixels;
-
-		return flatData;
 	},
 }
 
@@ -395,7 +474,19 @@ var output = {
 		}
 
 		return newPalette;
-	}
+	},
+
+	getTransferData: function (pixels, x = 0, y = 0) {
+		flatData = this.context.createImageData(this.canvas.width(), this.canvas.height());
+		for (var i = 0; i < flatData.data.length; i += 4) {
+			flatData.data[i + 0] = pixels[i + 0];
+			flatData.data[i + 1] = pixels[i + 1];
+			flatData.data[i + 2] = pixels[i + 2];
+			flatData.data[i + 3] = 255;
+		}
+
+		return flatData;
+	},
 }
 
 $(document).ready(function () {
@@ -434,7 +525,7 @@ $(document).ready(function () {
 				var recolorPixels = origin.recolor(output.getNewPalette());
 				var flatPixels = origin.flattenPixels(recolorPixels);
 
-				var imgData = origin.getTransferData(flatPixels);
+				var imgData = output.getTransferData(flatPixels);
 
 				output.putImageData(imgData);
 

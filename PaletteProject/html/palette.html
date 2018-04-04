@@ -14,15 +14,18 @@
 <body>
 	<div id="header">
 		<div id="titleDiv">
-			Palette Recoloring
-			<img id="loading" src="../images/loading.gif" />
+			<div>
+				Palette Recoloring
+				<img id="loading" src="../images/loading.gif" />
+
+			</div>
 		</div>
 	</div>
 
 	<div id="content">
 		<div id="originalImage" class="imageContainer">
 			<canvas id="origin" class="imageDisplay" height="400" width="400"></canvas>
-			<canvas id="originHist" class="imageDisplay" height="400" width="400"></canvas>
+			<canvas id="originHist" class="imageDisplay" height="400" width="400" style="display: none;"></canvas>
 		</div>
 
 		<div id="paletteContainer">
