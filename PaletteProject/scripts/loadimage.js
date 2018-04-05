@@ -680,13 +680,20 @@ $(document).ready(function () {
 			});
 
 			$("#transfer").mousedown(showLoading).mouseup(function () {
-				var recolorPixels = origin.recolor(output.getNewPalette());
+
+				alert("Not yet implemented!");
+
+				
+				// var recolorPixels = origin.recolor(output.getNewPalette());
+
+				// Use original pixels for now
+				var recolorPixels = origin.pixels;
 				var flatPixels = origin.flattenPixels(recolorPixels);
-
+				
 				var imgData = output.getTransferData(flatPixels);
-
+			
 				output.putImageData(imgData);
-
+				
 
 				hideLoading();
 			});
