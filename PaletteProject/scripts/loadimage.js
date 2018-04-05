@@ -1,6 +1,6 @@
 // Loading an image
 
-var sourceImg = "../images/flower.jpg"
+var sourceImg = "../images/sky.jpg"
 
 var rgbString = function (rgba) {
 	return "rgb(" + parseInt(rgba[0]) + ", " + parseInt(rgba[1]) + ", " + parseInt(rgba[2]) + ")"
@@ -14,6 +14,91 @@ var stringtoRgb = function (rgbString) {
 	}
 
 	return rgb;
+
+}
+
+// Perform math operation on lab colors
+var labOp = function (x, y, op = '+') {
+	var output;
+	for (var l in x) {
+		if (op == '-')
+			result = x[l] - y[l];
+		else if (op == '/')
+			result = x[l] / y[l];
+		else if (op == '*')
+			result = x[l] * y[l];
+		else
+			result = x[l] + y[l];
+
+		output.push(result);
+	}
+
+	return output;
+}
+
+// Check if lab color is out of gamut
+var labOutOfGamut = function (C, L) {
+	C = [L, C[0], C[1]]
+	C_rgb = lab2rgb(C);
+
+	var outOfBounds = false;
+
+	// Check if all bounds have been reached
+	if ((C_rgb[0] == 255 || C_rgb[0] == 0)
+		&& C_rgb[1] == 255 || C_rgb[1] == 0
+		&& C_rgb[2] == 255 || C_rgb[2] == 0)
+		return true;
+
+
+	for (var i in C_rgb) {
+		var val = C_rgb[i];
+
+		if (val < 0 || val > 255 || isNaN(val)) {
+			outOfBounds = true;
+			break;
+		}
+	}
+
+	return outOfBounds;
+}
+
+// Get color Cb in Lab color space
+// Where Lb = L and Cb is where the boundary of the gamut intersects
+// The line between C and C_prime
+// x is the optional starting point, using the slope of C to C_prime
+var gamutIntersect = function (C, C_prime, L, x) {
+	// Get slope from C to C_prime
+	// (Cp_b - C_b) / (Cp_a - C_a)
+
+	var db = (C_prime[1] - C[1]);
+	var da = (C_prime[0] - C[0]);
+
+	var outOfBounds = false;
+	var prevColor = [0, 0];
+	var currentColor = C;
+
+	if (x)
+		currentColor = x;
+
+	while (outOfBounds == false) {
+		// Store the previous color
+		// This will be the intersect 
+		// when the current color is out of bounds
+		prevColor = currentColor;
+
+		// Get next color
+		currentColor[0] = prevColor[0] + da;
+		currentColor[1] = prevColor[1] + db;
+
+		if (labOutOfGamut(currentColor, L)) {
+			outOfBounds = true;
+		}
+	}
+
+	// The last in-gamut color will be used
+	C_b = prevColor;
+
+	return C_b;
 
 }
 
@@ -339,75 +424,148 @@ var origin = {
 	},
 
 	recolor: function (newPalette) {
-		var palette = this.palette;
+		var palette = this.palette.slice(0, 5);
 
 		var pixels = this.pixels;
+
+		// Calculate sigma and lambda now
+		// To avoid multiple calculations
+
+		// Sigma = mean of distance between all pairs of colors in palette
+		var distances = [];
+		for (var i = 0; i < palette.length - 1; i++) {
+			for (var j = i; j < palette.length - 1; j++) {
+				var C1 = rgb2lab(palette[i]).slice(1, 3);
+				var C2 = rgb2lab(palette[j + 1]).slice(1, 3);
+				distances.push(math.distance(C1, C2));
+
+			}
+		}
+
+		var sigma = math.mean(distances);
+
+		var transferColor = function (x) {
+			x_lab = rgb2lab(x);
+
+			var weigh = function (i, x) {
+
+				// Gaussian Kernel
+				var phi = function (r) {
+					var exp_input = math.divide(-1 * math.square(r),
+						2 * math.square(sigma));
+
+					return math.exp(exp_input);
+				};
+
+				var weightTotal = 0;
+
+				for (var j in palette) {
+					var lambda = 0;
+					if (j == i)
+						lambda = 1;
+					else
+						lambda = Math.random(0, 1);
+
+					// Use only the ab values of the color
+					C_j = rgb2lab(palette[j]);
+
+					var phi_input = math.norm(math.subtract(x, C_j));
+
+					weightTotal += lambda * phi(phi_input);
+				}
+
+				return weightTotal;
+			}
+
+			var transfer = function (i, x) {
+				// x uses only [a,b] values of lab color space
+				var C = rgb2lab(palette[i]).slice(1, 3);
+				var C_prime = rgb2lab(newPalette[i]).slice(1, 3);
+
+				var L = rgb2lab(newPalette[i])[0];
+
+				var C_b = gamutIntersect(C, C_prime, L);
+
+				var x_0 = [0, 0];
+
+				x_0 = math.subtract(math.add(x, C), C_prime);
+
+				// near case
+				if (labOutOfGamut(x_0, L)) {
+					// Find where the line from C_prime to x_0
+					// Intersects with the gamut boundary
+					var x_b = gamutIntersect(C_prime, x_0, L);
+				}
+				// far case
+				else {
+					// Get x_b where x intersects the gamut boundary
+					// Parallel to C - C_prime
+					var x_b = gamutIntersect(C, C_prime, L, x);
+
+				}
+
+				// Calculate x'
+				var min_numerator = math.norm(math.subtract(x_b, x));
+				var min_denom = math.norm(math.subtract(C_b, C));
+
+				var min_result = math.min(1, min_numerator / min_denom);
+
+				// Find x' such that
+				// ||x'-x|| = ||C'-C||*(min_result)
+				var dist = math.norm(math.subtract(C_prime, C));
+
+				var v = math.subtract(x_b, x);
+				var u = math.divide(v, math.norm(v));
+
+				var x_prime = math.add(v, math.multiply(dist, u));
+
+				// Return x', using the new color's luminance
+				return [rgb2lab(palette[i])[0], x_prime[0], x_prime[1]];
+			}
+
+			x_ab = x_lab.slice(1, 3);
+
+			var total = 0;
+			var weights = [0, 0, 0, 0, 0];
+			for (var i in palette) {
+				var weight = weigh(i, x_lab);
+
+				if (weight <= 0)
+					weight = 0;
+
+				weights[i] = weight;
+			}
+
+			// Re-normalize weights between 0 and 1
+			var ratio = Math.max.apply(Math, weights) / 1;
+
+			for (var i = 0; i < weights.length; i++) {
+				weights[i] = weights[i] / ratio;
+			}
+
+			// Apply weights to result of transfer function
+			for (var i in palette) {
+				var f_result = transfer(i, x_ab);
+
+				total += math.multiply(weight, f_result);
+			}
+
+			var newColor = lab2rgb(total);
+
+			return newColor;
+
+		};
 
 		// Iterate through all pixels and transfer each color
 		for (var i = 0; i < pixels.length; i++) {
 			var pixel = pixels[i]
 
-			var newColor = this.transferColor(pixel);
+			var newColor = transferColor(pixel);
 
 			pixels[i] = newColor;
 		}
 
 		return pixels;
-	},
-
-	transferColor: function (x, c, c_prime) {
-		x_lab = rgb2lab(x);
-		c_lab = rgb2lab(c);
-		c_prime_lab = rgb2lab(c_prime);
-
-		// for now, just subtract
-		/*
-		c_diff = []
-		c_diff.push(c_prime_lab[0] - c_lab[0])
-		c_diff.push(c_prime_lab[1] - c_lab[1])
-		c_diff.push(c_prime_lab[2] - c_lab[2])
-
-		x_prime_lab = [x_lab[0] + c_diff[0],
-		x_lab[1] + c_diff[1],
-		x_lab[2] + c_diff[2]
-		]
-		x_prime = lab2rgb(x_prime_lab);
-
-		for (var i in x_prime) {
-			x_prime[i] = parseInt(x_prime[i])
-		}
-
-		return x_prime;
-		*/
-
-		// Todo: calculate
-		// sigma: mean distance of all pairs of colors in palette
-		// lambda: solving system of equations
-		// f_i(x): calculating x'
-		var weigh = function (i, x) {
-
-			var phi = function (r) {
-				var sigma = 1;
-
-				return math.exp(-math.square(r) /
-					2 * math.square(sigma));
-			}
-
-			var weightTotal = 0;
-
-			for (var j in clusters) {
-				var lambda = 1;
-
-				weightTotal += lambda * phi(math.abs(x - rgb2lab(this.palette[j])));
-			}
-
-			return weightTotal;
-		}
-
-		for (var i in this.clusters) {
-			var weight = weigh(i, x_lab);
-		}
-
 	},
 
 	flattenPixels: function (pixels) {
