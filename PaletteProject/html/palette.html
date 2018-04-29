@@ -12,7 +12,10 @@
 	<script src="../scripts/math.js"></script>
 	<script src="../scripts/rbf.js"></script>
 	<script src="../scripts/numeric.js"></script>
+	<script src="../scripts/jqColor.js"></script>
+	<script src="../scripts/color.all.min.js"></script>
 	<link rel="stylesheet" href="../css/palette.css" />
+	<link rel="stylesheet" href="../css/jqColor.css" />
 </head>
 <body>
 	<div id="header">
@@ -28,17 +31,18 @@
 	<div id="content">
 		<div id="originalImage" class="imageContainer">
 			<canvas id="origin" class="imageDisplay" height="400" width="400"></canvas>
-			<canvas id="originHist" class="imageDisplay" height="400" width="400"></canvas>
+			<canvas id="originHist" class="imageDisplay" height="400" width="400" style="display: none"></canvas>
 		</div>
 
 		<div id="paletteContainer">
 			<button id="calc" class="actionBtn">Calculate Palette</button>
-			<div class="colorContainer">
-				<button id="originColor1" class="jscolor {valueElement:null,value:'ffffff'}"></button>
-				<button id="originColor2" class="jscolor {valueElement:null,value:'ffffff'}"></button>
-				<button id="originColor3" class="jscolor {valueElement:null,value:'ffffff'}"></button>
-				<button id="originColor4" class="jscolor {valueElement:null,value:'ffffff'}"></button>
-				<button id="originColor5" class="jscolor {valueElement:null,value:'ffffff'}"></button>
+			<div id="colorContainer">
+				<input id="kPicker3" type="radio" name="kPicker" value="3" />
+				<label for="kPicker3">3</label>
+				<input id="kPicker4" type="radio" name="kPicker" value="4" />
+				<label for="kPicker4">4</label>
+				<input id="kPicker5" type="radio" name="kPicker" value="5" checked="checked" />
+				<label for="kPicker5">5</label>
 			</div>
 			<button id="transfer" class="actionBtn">Transfer Colors</button>
 		</div>

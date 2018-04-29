@@ -20,14 +20,20 @@ var stringtoRgb = function (rgbString) {
 // Check if lab color is out of gamut
 var labOutOfGamut = function (C, L) {
 	C = [L, C[0], C[1]]
+
+	if ((C[0] >= 100 || C[0] <= 0)
+		|| (C[1] >= 128 || C[1] <= -128)
+		|| (C[2] >= 128 || C[2] <= -128))
+		return true;
+
 	C_rgb = lab2rgb(C);
 
 	var outOfBounds = false;
 
 	// Check if all bounds have been reached
-	if ((C_rgb[0] == 255 || C_rgb[0] == 0)
-		&& C_rgb[1] == 255 || C_rgb[1] == 0
-		&& C_rgb[2] == 255 || C_rgb[2] == 0)
+	if ((C_rgb[0] >= 255 || C_rgb[0] <= 0)
+		&& (C_rgb[1] >= 255 || C_rgb[1] <= 0)
+		&& (C_rgb[2] >= 255 || C_rgb[2] <= 0))
 		return true;
 
 
@@ -51,8 +57,8 @@ var gamutIntersect = function (C, C_prime, L, x) {
 	// Get slope from C to C_prime
 	// (Cp_b - C_b) / (Cp_a - C_a)
 
-	var db = (C_prime[1] - C[1]);
-	var da = (C_prime[0] - C[0]);
+	var db = (C_prime[1] - C[1]) / 10;
+	var da = (C_prime[0] - C[0]) / 10;
 
 	var outOfBounds = false;
 	var prevColor = [0, 0];
@@ -65,7 +71,7 @@ var gamutIntersect = function (C, C_prime, L, x) {
 		// Store the previous color
 		// This will be the intersect 
 		// when the current color is out of bounds
-		prevColor = currentColor;
+		prevColor = currentColor.slice();
 
 		// Get next color
 		currentColor[0] = prevColor[0] + da;
@@ -94,6 +100,7 @@ var hideLoading = function () {
 // origin image struct
 var origin = {
 	img: new Image(),
+	paletteSize: 5,
 	pixels: null,
 	palette: null,
 	weights: null,
@@ -304,7 +311,7 @@ var origin = {
 		// Calculate the starting centroids for kmeans
 		var centroids = [];
 		var usedBins = [];
-		while (centroids.length < 5) {
+		while (centroids.length < this.paletteSize) {
 			// Get mean of largest bin
 			var labBins = [rlabBins, glabBins, blabBins];
 			var max_i; var max_j; var maxSize = 0;
@@ -362,7 +369,7 @@ var origin = {
 			}
 
 			else {
-				return (a[0] < b[0]) ? -1 : 1; 
+				return (a[0] < b[0]) ? -1 : 1;
 			}
 		}
 
@@ -370,9 +377,9 @@ var origin = {
 		var kmeansPoints = data.points;
 
 		// The 6th cluster will always filter out the darkest cluster (closest to black)
-		var kMeansResult = clusterfck.kmeans(kmeansPoints, 6, data.centroids);
+		var kMeansResult = clusterfck.kmeans(kmeansPoints, this.paletteSize + 1, data.centroids);
 
-		var centroids = kMeansResult.centroids.slice(0, 5);
+		var centroids = kMeansResult.centroids.slice(0, this.paletteSize);
 
 		centroids.sort(sortPalette);
 
@@ -382,12 +389,12 @@ var origin = {
 		}
 
 		return palette;
-		
+
 	},
 
 	// Calculate weights for pixels now
 	getWeights: function () {
-		
+
 		var weights = [];
 
 		for (var i = 0; i < this.palette.length; i++) {
@@ -398,7 +405,12 @@ var origin = {
 				points[j] = rgb2lab(points[j]);
 			}
 
-			var values = [0.0, 0.0, 0.0, 0.0, 0.0];
+			var values = [];
+
+			for (j in this.palette) {
+				values.push(0.0);
+			}
+
 			values[i] = 1.0;
 
 			var rbf = RBF(points, values, 'gaussian');
@@ -412,10 +424,35 @@ var origin = {
 	showPalette: function () {
 		var palette = this.palette;
 
-		for (var i = 0; i < 5; i++) {
-			$("#originColor" + (i + 1)).css({
-				backgroundColor: rgbString(palette[i])
-			});
+		labMin = 0;
+		labMax = 100;
+
+		$("input.color").remove();
+
+		for (var i = 0; i < this.paletteSize; i++) {
+			labMin = rgb2lab(palette[i])[0]
+
+			if (i == this.paletteSize - 1) {
+				labMax = 100
+			}
+			else {
+				labMax = rgb2lab(palette[i + 1])[0]
+			}
+
+			var colorElement = $("<input></input>")
+				.attr("id", "originColor" + (i + 1))
+				.attr("type", "button")
+				.addClass("color");
+
+			$("#colorContainer").append(colorElement);
+
+
+
+			colorElement.val(rgbString(palette[i]))
+				.css("background-color", rgbString(palette[i]))
+				.colorPicker({
+				});
+
 		}
 
 	},
@@ -446,45 +483,15 @@ var origin = {
 		var transferColor = function (x) {
 			x_lab = rgb2lab(x);
 
-			/*
-			var weigh = function (i, x) {
-
-				// Gaussian Kernel
-				var phi = function (r) {
-					var exp_input = math.divide(-1 * math.square(r),
-						2 * math.square(sigma));
-
-					return math.exp(exp_input);
-				};
-
-				var weightTotal = 0;
-
-				for (var j in palette) {
-					var lambda = 0;
-					if (j == i)
-						lambda = 1;
-					else
-						lambda = Math.random(0, 1);
-
-					// Use only the ab values of the color
-					C_j = rgb2lab(palette[j]);
-
-					var phi_input = math.norm(math.subtract(x, C_j));
-
-					weightTotal += lambda * phi(phi_input);
-				}
-
-				return weightTotal;
-			}
-			*/
-
-			var transfer = function (i, x) {
+			var transfer = function (i, x, lum) {
 				// x uses only [a,b] values of lab color space
 				var C = rgb2lab(palette[i]);
 				var C_prime = rgb2lab(newPalette[i]);
+				var C_prime_l = C_prime[0];
 
-				if (math.deepEqual(C, C_prime))
+				if (math.deepEqual(C, C_prime)) {
 					return x;
+				}
 
 				x_ab = x.slice(1, 3);
 				C = C.slice(1, 3);
@@ -530,11 +537,58 @@ var origin = {
 				var x_prime = math.add(v, math.multiply(dist, u));
 
 				// Return x', using the new color's luminance
-				return [x[0], x_prime[0], x_prime[1]];
+				var result = [lum, x_prime[0], x_prime[1]];
+
+				if (labOutOfGamut(x_prime, lum)) {
+					result_ab = gamutIntersect(x_ab, x_prime, lum);
+					result = [lum, result_ab[0], result_ab[1]];
+				}
+
+				return result;
 			}
-			
+
+			var transfer_l = function (i, x, weights) {
+				// Get closest palette
+				var maxWeight = 0;
+				var maxIndex = 0;
+				for (j in weights) {
+					if (weights[j] > maxWeight) {
+						maxIndex_2 = maxIndex;
+						maxWeight_2 = maxWeight;
+						maxIndex = j;
+						maxWeight = weights[j];
+					}
+				}
+
+
+				var maxWeight_2 = 0;
+				var maxIndex_2 = 0;
+				for (j in weights) {
+					if (j == maxIndex)
+						continue;
+					if (weights[j] > maxWeight_2) {
+						maxIndex_2 = j;
+						maxWeight_2 = weights[j];
+					}
+				}
+
+				var closestColor = rgb2lab(palette[maxIndex]);
+
+				var closestColor_2 = rgb2lab(palette[maxIndex_2]);
+
+				var new_l = (closestColor[0] * (maxWeight)) +
+					(closestColor_2[0] * (maxWeight_2)) +
+					(x[0] * (1 - maxWeight - maxWeight_2));
+
+				return x[0];
+			}
+
 			var total = [0, 0, 0];
-			var weights = [0, 0, 0, 0, 0];
+			var weights = []
+			for (i in palette) {
+				weights.push[0.0]
+			}
+
 			for (var i in palette) {
 				weights[i] = weigh[i](x_lab);
 
@@ -542,20 +596,30 @@ var origin = {
 					weights[i] = 0;
 			}
 
-			var weightSum = math.sum(weights);
+			var reweigh = function (wArray) {
+				var weightSum = math.sum(weights);
 
-			// Re-normalize weights between 0 and 1
-			for (var i = 0; i < weights.length; i++) {
-				weights[i] = weights[i] / weightSum;
+				// Re-normalize weights between 0 and 1
+				for (var i = 0; i < weights.length; i++) {
+					weights[i] = weights[i] / weightSum;
+
+				}
 			}
+
+			reweigh(weights);
+
+			var result_l = transfer_l(i, x_lab, weights);
 
 			// Apply weights to result of transfer function
 			for (var i in palette) {
 
-				var f_result = transfer(i, x_lab);
+				var f_result_ab = transfer(i, x_lab, result_l);
 
-				total = math.add(total, math.multiply(weights[i], f_result));
+				total = math.add(total, math.multiply(weights[i], f_result_ab));
 			}
+
+
+			total = [result_l, total[1], total[2]];
 
 			var newColor = math.round(lab2rgb(total));
 
@@ -586,6 +650,18 @@ var origin = {
 		}
 
 		return data;
+	},
+
+	getNewPalette: function () {
+		newPalette = [];
+
+		for (var i = 1; i <= this.paletteSize; i++) {
+			var color = $("#originColor" + i).css("backgroundColor");
+			var rgb = stringtoRgb(color);
+			newPalette.push(rgb);
+		}
+
+		return newPalette;
 	},
 }
 
@@ -629,18 +705,6 @@ var output = {
 		this.context.putImageData(imgData, x, y);
 	},
 
-	getNewPalette: function () {
-		newPalette = [];
-
-		for (var i = 1; i <= 5; i++) {
-			var color = $("#originColor" + i).css("backgroundColor");
-			var rgb = stringtoRgb(color);
-			newPalette.push(rgb);
-		}
-
-		return newPalette;
-	},
-
 	getTransferData: function (pixels, x = 0, y = 0) {
 		flatData = this.context.createImageData(this.canvas.width(), this.canvas.height());
 		for (var i = 0; i < flatData.data.length; i += 4) {
@@ -661,6 +725,7 @@ $(document).ready(function () {
 	origin.context = origin.canvas[0].getContext('2d');
 	output.context = output.canvas[0].getContext('2d');
 
+
 	make_base();
 
 	function make_base() {
@@ -674,6 +739,7 @@ $(document).ready(function () {
 				// get image array
 				origin.pixels = origin.getImageData();
 
+				origin.paletteSize = $("input[name=kPicker]:checked").val();
 				origin.palette = origin.getPalette();
 
 				origin.weights = origin.getWeights();
@@ -684,8 +750,8 @@ $(document).ready(function () {
 			});
 
 			$("#transfer").mousedown(showLoading).mouseup(function () {
-				
-				var recolorPixels = origin.recolor(output.getNewPalette());
+
+				var recolorPixels = origin.recolor(origin.getNewPalette());
 
 				// Use original pixels for now
 				// var recolorPixels = origin.pixels;

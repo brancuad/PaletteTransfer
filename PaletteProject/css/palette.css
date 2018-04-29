@@ -75,16 +75,17 @@
 	margin-top: 50px;
 }
 
-.colorContainer {
+#colorContainer {
 	width: 167px;
+	height: 160px;
 	margin: 0 auto;
 	padding: 5px;
+	text-align: center
 }
 
-.jscolor {
-	margin: auto;
-	width: 30px;
-	height: 30px;
+
+input.color {
+	margin: 1px;
 	cursor: pointer;
 	border-radius: 5px;
 }
