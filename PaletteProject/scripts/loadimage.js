@@ -55,8 +55,12 @@ var gamutIntersect = function (C, C_prime, L, x) {
 	// Get slope from C to C_prime
 	// (Cp_b - C_b) / (Cp_a - C_a)
 
-	var db = (C_prime[1] - C[1]) / 10;
-	var da = (C_prime[0] - C[0]) / 10;
+	var db = (C_prime[1] - C[1]);
+	var da = (C_prime[0] - C[0]);
+
+	var divisor = 10;
+	var da = da / divisor;
+	var db = db / divisor;
 
 	var outOfBounds = false;
 	var prevColor = [0, 0];
@@ -414,13 +418,13 @@ var origin = {
 
 
 
-				var L = C_l;
+				var L = lum;
 
 				var C_b = gamutIntersect(C, C_prime, L);
 
 				var x_0 = [0, 0];
 
-				x_0 = math.subtract(math.add(x_ab, C), C_prime);
+				x_0 = math.subtract(math.add(x_ab, C_prime), C);
 
 				// near case
 				if (labOutOfGamut(x_0, L)) {
@@ -449,7 +453,7 @@ var origin = {
 				var v = math.subtract(x_b, x_ab);
 				var u = math.divide(v, math.norm(v));
 
-				var x_prime = math.add(v, math.multiply(dist, u));
+				var x_prime = math.add(x_ab, math.multiply(dist * min_result, u));
 
 				// Return x', using the new color's luminance
 				var result = [lum, x_prime[0], x_prime[1]];
@@ -491,9 +495,10 @@ var origin = {
 
 				var closestColor_2 = rgb2lab(palette[maxIndex_2]);
 
-				var new_l = (closestColor[0] * (maxWeight)) +
-					(closestColor_2[0] * (maxWeight_2)) +
-					(x[0] * (1 - maxWeight - maxWeight_2));
+				lumWeights = reweigh([maxWeight, maxWeight_2])
+
+				var new_l = (closestColor[0] * (lumWeights[0])) +
+					(closestColor_2[0] * (lumWeights[1]));
 
 				return x[0];
 			}
@@ -512,21 +517,26 @@ var origin = {
 			}
 
 			var reweigh = function (wArray) {
-				var weightSum = math.sum(weights);
+				var weightSum = math.sum(wArray);
 
 				// Re-normalize weights between 0 and 1
-				for (var i = 0; i < weights.length; i++) {
-					weights[i] = weights[i] / weightSum;
+				for (var i = 0; i < wArray.length; i++) {
+					wArray[i] = wArray[i] / weightSum;
 
 				}
+
+				return wArray
 			}
 
-			reweigh(weights);
+			var weights = reweigh(weights);
 
 			var result_l = transfer_l(i, x_lab, weights);
 
 			// Apply weights to result of transfer function
 			for (var i in palette) {
+
+				if (weights[i] == 0)
+					continue;
 
 				var f_result_ab = transfer(i, x_lab, result_l);
 
