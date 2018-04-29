@@ -1,7 +1,5 @@
 // Loading an image
 
-var sourceImg = "../images/sky.jpg"
-
 var rgbString = function (rgba) {
 	return "rgb(" + parseInt(rgba[0]) + ", " + parseInt(rgba[1]) + ", " + parseInt(rgba[2]) + ")"
 }
@@ -683,6 +681,10 @@ $(document).ready(function () {
 			});
 		}
 
-		origin.img.src = sourceImg;
+		origin.img.src = $("#imgSelect").val();
+
+		$("#imgSelect").change(function () {
+			origin.img.src = $(this).val();
+		});
 	}
 });
