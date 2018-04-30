@@ -77,14 +77,14 @@
 
 #colorContainer {
 	width: 167px;
-	height: 160px;
+	height: 200px;
 	margin: 0 auto;
 	padding: 5px;
 	text-align: center
 }
 
 #imgSelect {
-	margin: 0 auto;
+	margin: 5px auto;
 	display: block;
 }
 
